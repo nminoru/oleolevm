@@ -1,0 +1,6 @@
+menu "OleOle"
+
+config OLEOLE
+	bool "Support for Ole-Ole-Virtual Memory"
+
+endmenu

@@ -9,6 +9,7 @@
 
 #include <linux/mm.h>
 #include <linux/hugetlb.h>
+#include <linux/oleoletlb.h>
 #include <linux/shm.h>
 #include <linux/ksm.h>
 #include <linux/mman.h>
@@ -297,6 +298,9 @@ static struct vm_area_struct *vma_to_resize(unsigned long addr,
 		goto Efault;
 
 	if (is_vm_hugetlb_page(vma))
+		goto Einval;
+
+	if (is_vm_oleoletlb_page(vma))
 		goto Einval;
 
 	/* We can't remap across vm area boundaries */

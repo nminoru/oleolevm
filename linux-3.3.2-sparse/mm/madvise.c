@@ -11,6 +11,7 @@
 #include <linux/mempolicy.h>
 #include <linux/page-isolation.h>
 #include <linux/hugetlb.h>
+#include <linux/oleoletlb.h>
 #include <linux/sched.h>
 #include <linux/ksm.h>
 
@@ -169,7 +170,7 @@ static long madvise_dontneed(struct vm_area_struct * vma,
 			     unsigned long start, unsigned long end)
 {
 	*prev = vma;
-	if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
+	if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_OLEOLETLB|VM_PFNMAP))
 		return -EINVAL;
 
 	if (unlikely(vma->vm_flags & VM_NONLINEAR)) {
@@ -200,7 +201,7 @@ static long madvise_remove(struct vm_area_struct *vma,
 
 	*prev = NULL;	/* tell sys_madvise we drop mmap_sem */
 
-	if (vma->vm_flags & (VM_LOCKED|VM_NONLINEAR|VM_HUGETLB))
+	if (vma->vm_flags & (VM_LOCKED|VM_NONLINEAR|VM_HUGETLB|VM_OLEOLETLB))
 		return -EINVAL;
 
 	if (!vma->vm_file || !vma->vm_file->f_mapping

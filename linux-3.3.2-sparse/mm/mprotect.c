@@ -10,6 +10,7 @@
 
 #include <linux/mm.h>
 #include <linux/hugetlb.h>
+#include <linux/oleoletlb.h>
 #include <linux/shm.h>
 #include <linux/mman.h>
 #include <linux/fs.h>
@@ -157,6 +158,11 @@ mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
 		*pprev = vma;
 		return 0;
 	}
+
+#ifdef CONFIG_OLEOLE
+	if (is_vm_oleoletlb_page(vma))
+		return -EACCES;
+#endif /* CONFIG_OLEOLE */
 
 	/*
 	 * If we make a private mapping writable we increase our commit;

@@ -41,6 +41,7 @@
 #include <linux/kernel_stat.h>
 #include <linux/mm.h>
 #include <linux/hugetlb.h>
+#include <linux/oleoletlb.h>
 #include <linux/mman.h>
 #include <linux/swap.h>
 #include <linux/highmem.h>
@@ -574,12 +575,15 @@ void free_pgtables(struct mmu_gather *tlb, struct vm_area_struct *vma,
 		if (is_vm_hugetlb_page(vma)) {
 			hugetlb_free_pgd_range(tlb, addr, vma->vm_end,
 				floor, next? next->vm_start: ceiling);
+		} else if (is_vm_oleoletlb_page(vma)) {
+			oleolevm_free_pgd_range(tlb, vma, addr, vma->vm_end,
+				floor, next? next->vm_start: ceiling);
 		} else {
 			/*
 			 * Optimization: gather nearby vmas into one call down
 			 */
 			while (next && next->vm_start <= vma->vm_end + PMD_SIZE
-			       && !is_vm_hugetlb_page(next)) {
+			       && !is_vm_hugetlb_page(next) && !is_vm_oleoletlb_page(next)) {
 				vma = next;
 				next = vma->vm_next;
 				unlink_anon_vmas(vma);
@@ -1066,13 +1070,16 @@ int copy_page_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
 	 * readonly mappings. The tradeoff is that copy_page_range is more
 	 * efficient than faulting.
 	 */
-	if (!(vma->vm_flags & (VM_HUGETLB|VM_NONLINEAR|VM_PFNMAP|VM_INSERTPAGE))) {
+	if (!(vma->vm_flags & (VM_HUGETLB|VM_OLEOLETLB|VM_NONLINEAR|VM_PFNMAP|VM_INSERTPAGE))) {
 		if (!vma->anon_vma)
 			return 0;
 	}
 
 	if (is_vm_hugetlb_page(vma))
 		return copy_hugetlb_page_range(dst_mm, src_mm, vma);
+
+	if (is_vm_oleoletlb_page(vma))
+		return -ENOMEM;
 
 	if (unlikely(is_pfn_mapping(vma))) {
 		/*
@@ -1380,6 +1387,9 @@ unsigned long unmap_vmas(struct mmu_gather *tlb,
 				if (vma->vm_file)
 					unmap_hugepage_range(vma, start, end, NULL);
 
+				start = end;
+			} else if (is_vm_oleoletlb_page(vma)) {
+				/* */
 				start = end;
 			} else
 				start = unmap_page_range(tlb, vma, start, end, details);
@@ -1731,6 +1741,10 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
 			i = follow_hugetlb_page(mm, vma, pages, vmas,
 					&start, &nr_pages, i, gup_flags);
 			continue;
+		}
+
+		if (is_vm_oleoletlb_page(vma)) {
+                    return -EFAULT;
 		}
 
 		do {

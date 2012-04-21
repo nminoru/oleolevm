@@ -45,6 +45,10 @@
 #include <linux/edac.h>
 #endif
 
+#ifdef CONFIG_OLEOLE
+#include <linux/oleole.h>
+#endif
+
 #include <asm/kmemcheck.h>
 #include <asm/stacktrace.h>
 #include <asm/processor.h>

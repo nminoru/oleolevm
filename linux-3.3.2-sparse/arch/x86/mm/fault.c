@@ -12,7 +12,9 @@
 #include <linux/mmiotrace.h>		/* kmmio_handler, ...		*/
 #include <linux/perf_event.h>		/* perf_sw_event		*/
 #include <linux/hugetlb.h>		/* hstate_index_to_shift	*/
+#include <linux/oleoletlb.h>
 #include <linux/prefetch.h>		/* prefetchw			*/
+
 
 #include <asm/traps.h>			/* dotraplinkage, ...		*/
 #include <asm/pgalloc.h>		/* pgd_*(), ...			*/
@@ -1085,8 +1087,17 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
 			local_irq_enable();
 	}
 
+#ifdef CONFIG_OLEOLE
+	/*
+	 *  Oleole VM may cause #PF exceptions with PF_RSVD.
+	 */
+	if (unlikely(error_code & PF_RSVD))
+		if (!is_vm_oleoletlb_page(vma))
+			pgtable_bad(regs, error_code, address);
+#else  /* CONFIG_OLEOLE */
 	if (unlikely(error_code & PF_RSVD))
 		pgtable_bad(regs, error_code, address);
+#endif /* CONFIG_OLEOLE */
 
 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
 
@@ -1165,6 +1176,14 @@ retry:
 	 * we can handle it..
 	 */
 good_area:
+#ifdef CONFIG_OLEOLE
+	if (is_vm_oleoletlb_page(vma)) {
+		oleolevm_handle_mm_fault(mm, vma, address, flags, regs, error_code);
+		up_read(&mm->mmap_sem);
+		return;
+	}
+#endif /* CONFIG_OLEOLE */
+
 	if (unlikely(access_error(error_code, vma))) {
 		bad_area_access_error(regs, error_code, address);
 		return;

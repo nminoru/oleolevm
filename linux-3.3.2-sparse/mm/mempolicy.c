@@ -69,6 +69,7 @@
 #include <linux/mm.h>
 #include <linux/highmem.h>
 #include <linux/hugetlb.h>
+#include <linux/oleoletlb.h>
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/nodemask.h>
@@ -585,7 +586,7 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
 			if (prev && prev->vm_end < vma->vm_start)
 				return ERR_PTR(-EFAULT);
 		}
-		if (!is_vm_hugetlb_page(vma) &&
+		if (!is_vm_hugetlb_page(vma) && !is_vm_oleoletlb_page(vma) &&
 		    ((flags & MPOL_MF_STRICT) ||
 		     ((flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) &&
 				vma_migratable(vma)))) {
